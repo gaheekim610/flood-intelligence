@@ -5,16 +5,52 @@ function wait(ms) {
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const csvPath = path.join(__dirname, 'data', 'station_ids.csv');
+const csvPath = path.join(__dirname, 'data', 'station-flood-level.csv');
 
-// Read all station IDs from CSV (assume header is 'STATION')
+// Helper CSV parser (handles quoted values)
+function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let insideQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const nextChar = line[i + 1];
+
+        if (char === '"') {
+            if (insideQuotes && nextChar === '"') {
+                current += '"';
+                i++; // skip second quote
+            } else {
+                insideQuotes = !insideQuotes;
+            }
+        } else if (char === ',' && !insideQuotes) {
+            result.push(current);
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+
+    result.push(current);
+    return result;
+}
+
+// Read all station IDs from station-flood-level.csv (assume header includes station_id_w)
 function readStationIds(filePath, startIndex = 0, endIndex = undefined) {
     const content = fs.readFileSync(filePath, 'utf-8');
-    const ids = content
-        .split('\n')
-        .slice(1) // skip header
-        .map(line => line.split(',')[0].trim())
-        .filter(id => id.length > 0);
+    const lines = content.split('\n').filter(line => line.trim().length > 0);
+    if (lines.length <= 1) return [];
+
+    const header = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim());
+    const stationIndex = header.findIndex(h => h === 'station_id_w');
+    if (stationIndex === -1) throw new Error('station_id_w column not found in station-flood-level.csv');
+
+    const ids = lines.slice(1).map(line => {
+        const cols = parseCSVLine(line);
+        return (cols[stationIndex] || '').replace(/"/g, '').trim();
+    }).filter(id => id.length > 0);
+
     return ids.slice(startIndex, endIndex);
 }
 
@@ -29,8 +65,8 @@ async function fetchWaterLevel(stationId, startTime, endTime) {
             varto: '100.00',
             start_time: startTime,
             end_time: endTime,
-            data_type: 'point',
-            interval: 'hour',
+            data_type: 'mean',
+            interval: 'year',
             multiplier: '1'
         }
     };
@@ -63,10 +99,8 @@ async function main(startTime, endTime, startIndex = 0, endIndex = undefined) {
         fs.mkdirSync(dataDir);
     }
     const csvOutPath = path.join(dataDir, 'all_water_levels.csv');
-    // Write header if file does not exist
-    if (!fs.existsSync(csvOutPath)) {
-        fs.writeFileSync(csvOutPath, 'station_id,longitude,latitude,station_name,time,value\n');
-    }
+    // Always create a fresh CSV file with header
+    fs.writeFileSync(csvOutPath, 'station_id_w,site,longitude,latitude,station_name,time,value\n');
 
     for (const stationId of stationIds) {
         console.log(`Fetching water level for station ${stationId}...`);
@@ -94,7 +128,13 @@ async function main(startTime, endTime, startIndex = 0, endIndex = undefined) {
             // point: { t: time, v: value }
             const time = point.t ?? '';
             const value = point.v ?? '';
-            const row = `${site},${longitude},${latitude},"${stationName}",${time},${value}\n`;
+
+            // Skip if value is 0 or any zero value
+            if (value === '' || parseFloat(value) === 0) {
+                continue;
+            }
+
+            const row = `"${stationId}","${site}","${longitude}","${latitude}","${stationName}","${time}","${value}"\n`;
             fs.appendFileSync(csvOutPath, row);
         }
 
@@ -105,4 +145,4 @@ async function main(startTime, endTime, startIndex = 0, endIndex = undefined) {
     console.log(`All results saved to ${csvOutPath}`);
 }
 
-main(20260311000000, 20260312000000, 100, 200); // Example: fetch for first 100 stations for a specific day
+main(19270101000000, 20260321000000, 0); // Example: fetch for first 100 stations for a specific day

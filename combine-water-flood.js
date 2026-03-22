@@ -9,18 +9,18 @@ if (!fs.existsSync(aggregateDir)) {
     fs.mkdirSync(aggregateDir);
 }
 
-// Read flood-level.csv into a map: station_name -> {minor, moderate, major}
+// Read flood-level.csv into a map: station_name -> {station_id, minor, moderate, major}
 const floodLevels = {};
 const floodLines = fs.readFileSync(floodLevelPath, 'utf-8').split('\n');
 const floodHeader = floodLines[0].split(',');
 for (let i = 1; i < floodLines.length; i++) {
     const line = floodLines[i].trim();
     if (!line) continue;
-    const [station_name, minor, moderate, major] = line.split(',');
+    const [station_id, station_name, minor, moderate, major] = line.split(',');
     if (station_name) {
         // Remove double quotes for robust matching
         const cleanName = station_name.replace(/"/g, '').trim().toLowerCase();
-        floodLevels[cleanName] = { minor, moderate, major };
+        floodLevels[cleanName] = { station_id: station_id.replace(/"/g, ''), minor: minor.replace(/"/g, ''), moderate: moderate.replace(/"/g, ''), major: major.replace(/"/g, '') };
     }
 }
 
@@ -38,7 +38,7 @@ for (const csvFile of csvFiles) {
     if (stationNameIdx === -1) continue;
     // Prepare output for this file
     const outPath = path.join(aggregateDir, `combined-${csvFile}`);
-    let outHeader = header.concat(['minor', 'moderate', 'major']).join(',') + '\n';
+    let outHeader = header.concat(['station_id', 'minor', 'moderate', 'major']).map(h => `"${h}"`).join(',') + '\n';
     fs.writeFileSync(outPath, outHeader); // Always overwrite for each file
     for (let i = 1; i < lines.length; i++) {
         const row = lines[i].trim();
@@ -46,8 +46,8 @@ for (const csvFile of csvFiles) {
         const cols = row.split(',');
         let stationName = cols[stationNameIdx] ? cols[stationNameIdx].replace(/"/g, '').trim().toLowerCase() : '';
         if (floodLevels[stationName]) {
-            const { minor, moderate, major } = floodLevels[stationName];
-            const outRow = cols.concat([minor, moderate, major]).join(',') + '\n';
+            const { station_id, minor, moderate, major } = floodLevels[stationName];
+            const outRow = cols.concat([`"${station_id}"`, `"${minor}"`, `"${moderate}"`, `"${major}"`]).join(',') + '\n';
             fs.appendFileSync(outPath, outRow);
         } else {
             // Uncomment for debugging:
