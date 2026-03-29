@@ -65,8 +65,8 @@ async function fetchWaterLevel(stationId, startTime, endTime) {
             varto: '100.00',
             start_time: startTime,
             end_time: endTime,
-            data_type: 'mean',
-            interval: 'year',
+            data_type: 'point',
+            interval: 'hour',
             multiplier: '1'
         }
     };
@@ -94,13 +94,10 @@ async function main(startTime, endTime, startIndex = 0, endIndex = undefined) {
         return;
     }
 
-    const dataDir = path.join(__dirname, 'data');
-    if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir);
+    const tempDir = path.join(__dirname, 'temp1');
+    if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir);
     }
-    const csvOutPath = path.join(dataDir, 'all_water_levels.csv');
-    // Always create a fresh CSV file with header
-    fs.writeFileSync(csvOutPath, 'station_id_w,site,longitude,latitude,station_name,time,value\n');
 
     for (const stationId of stationIds) {
         console.log(`Fetching water level for station ${stationId}...`);
@@ -124,6 +121,11 @@ async function main(startTime, endTime, startIndex = 0, endIndex = undefined) {
             await wait(waitTimeMs);
             continue;
         }
+
+        // Create a separate CSV file for each station
+        const csvOutPath = path.join(tempDir, `water_level_${stationId}.csv`);
+        fs.writeFileSync(csvOutPath, 'station_id_w,site,longitude,latitude,station_name,time,value\n');
+
         for (const point of points) {
             // point: { t: time, v: value }
             const time = point.t ?? '';
@@ -138,11 +140,14 @@ async function main(startTime, endTime, startIndex = 0, endIndex = undefined) {
             fs.appendFileSync(csvOutPath, row);
         }
 
+        console.log(`Saved data for station ${stationId} to ${csvOutPath}`);
+
         await wait(waitTimeMs);
     }
     const endTimeMs = Date.now();
     console.log(`Total fetching time: ${(endTimeMs - startTimeMs) / 1000} seconds`);
-    console.log(`All results saved to ${csvOutPath}`);
+    console.log(`All results saved to temp folder`);
 }
 
-main(19270101000000, 20260321000000, 0); // Example: fetch for first 100 stations for a specific day
+main(19270101000000, 20260321000000); // Fetch all stations and save each to separate CSV in temp folder
+// main(20260323000000, 20260324000000); // Fetch all stations and save each to separate CSV in temp folder
