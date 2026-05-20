@@ -1,11 +1,16 @@
-// Helper to wait for a given ms
-function wait(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const csvPath = path.join(__dirname, 'data', 'station-flood-level.csv');
+
+// This script reads station IDs from /data/station-flood-level.csv, 
+// fetches water level data for each station from the API, and saves it to separate CSV files in the temp folder.
+// Could take up to 3 hours (for 300 water stations).
+
+// Helper to wait for a given ms
+function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 // Helper CSV parser (handles quoted values)
 function parseCSVLine(line) {
@@ -66,8 +71,8 @@ async function fetchWaterLevel(stationId, startTime, endTime) {
             start_time: startTime,
             end_time: endTime,
             data_type: 'point',
-            interval: 'hour',
-            multiplier: '1'
+            interval: 'hour', // per 1 hour
+            multiplier: '1' // per 1 hour
         }
     };
     const url = `https://water-monitoring.information.qld.gov.au/cgi/webservice.pl?${encodeURIComponent(JSON.stringify(params))}`;
@@ -82,9 +87,6 @@ async function fetchWaterLevel(stationId, startTime, endTime) {
 
 async function main(startTime, endTime, startIndex = 0, endIndex = undefined) {
     const stationIds = readStationIds(csvPath, startIndex, endIndex);
-    // Set your desired time range here
-    // const startTime = '20260311000000';
-    // const endTime = '20260312000000';
     const waitTimeMs = 100; // 0.1 second wait between requests to avoid rate limits
 
     const startTimeMs = Date.now();
@@ -94,7 +96,7 @@ async function main(startTime, endTime, startIndex = 0, endIndex = undefined) {
         return;
     }
 
-    const tempDir = path.join(__dirname, 'temp1');
+    const tempDir = path.join(__dirname, 'temp');
     if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir);
     }
@@ -149,5 +151,5 @@ async function main(startTime, endTime, startIndex = 0, endIndex = undefined) {
     console.log(`All results saved to temp folder`);
 }
 
-main(19270101000000, 20260321000000); // Fetch all stations and save each to separate CSV in temp folder
-// main(20260323000000, 20260324000000); // Fetch all stations and save each to separate CSV in temp folder
+// main(19270101000000, 20260321000000); // Fetch all stations and save each to separate CSV in temp folder
+main(20260323000000, 20260325000000); // Fetch all stations and save each to separate CSV in temp folder

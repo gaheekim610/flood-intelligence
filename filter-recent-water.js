@@ -1,8 +1,15 @@
 const fs = require('fs');
 const path = require('path');
 
+// This script reads all CSV files in the /temp folder, filters rows to only keep those with time value from January 1st, 2021 onwards,
+// and only keeps rows that are at least 6 hours apart. The filtered results are saved to the /recent folder with the same file name.
+
 const tempDir = path.join(__dirname, 'temp');
 const recentDir = path.join(__dirname, 'recent');
+// Configurable cutoff time
+const cutoffTime = '20210101000000'; // January 1st, 2021, 00:00:00
+// Configurable time interval
+const sixHoursInMs = 6 * 60 * 60 * 1000; // every 6 hours (in milliseconds)
 
 // Ensure recent directory exists
 if (!fs.existsSync(recentDir)) {
@@ -34,7 +41,28 @@ function parseCSVLine(line) {
     return result;
 }
 
-const cutoffTime = '20210101000000'; // January 1st, 2016, 00:00:00
+function parseTimestamp(timestamp) {
+    const year = Number(timestamp.slice(0, 4));
+    const month = Number(timestamp.slice(4, 6)) - 1;
+    const day = Number(timestamp.slice(6, 8));
+    const hour = Number(timestamp.slice(8, 10));
+    const minute = Number(timestamp.slice(10, 12));
+    const second = Number(timestamp.slice(12, 14));
+
+    return Date.UTC(year, month, day, hour, minute, second);
+}
+
+function shouldKeepRow(timeValue, lastKeptTime) {
+    if (timeValue < cutoffTime) {
+        return false;
+    }
+
+    if (lastKeptTime === null) {
+        return true;
+    }
+
+    return parseTimestamp(timeValue) - lastKeptTime >= sixHoursInMs;
+}
 
 // Get all CSV files in temp directory
 const csvFiles = fs.readdirSync(tempDir).filter(f => f.endsWith('.csv'));
@@ -63,6 +91,7 @@ for (const file of csvFiles) {
     }
 
     const filteredLines = [];
+    let lastKeptTime = null;
 
     for (let i = 1; i < lines.length; i++) {
         const row = lines[i].trim();
@@ -71,8 +100,9 @@ for (const file of csvFiles) {
         const cols = parseCSVLine(row);
         const timeValue = (cols[timeIdx] || '').replace(/"/g, '').trim();
 
-        if (timeValue >= cutoffTime) {
+        if (shouldKeepRow(timeValue, lastKeptTime)) {
             filteredLines.push(row);
+            lastKeptTime = parseTimestamp(timeValue);
         }
     }
 
@@ -80,9 +110,9 @@ for (const file of csvFiles) {
         const outPath = path.join(recentDir, file);
         const outputContent = headerLine + '\n' + filteredLines.join('\n') + '\n';
         fs.writeFileSync(outPath, outputContent);
-        console.log(`Created filtered CSV for ${file} with ${filteredLines.length} rows.`);
+        console.log(`Created filtered CSV for ${file} with ${filteredLines.length} rows at 6-hour intervals.`);
     } else {
-        console.log(`No data from 2026 onwards in ${file}, skipping creation.`);
+        console.log(`No data from ${cutoffTime} onwards in ${file}, skipping creation.`);
     }
 }
 

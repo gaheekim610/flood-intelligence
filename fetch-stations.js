@@ -2,6 +2,8 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 
+// This script station id, station name, latitude, longitude and saves it to /data/stations.csv
+
 const API_URL = 'https://water-monitoring.information.qld.gov.au/cgi/webservice.pl';
 
 const requestBody = {
@@ -15,7 +17,7 @@ const requestBody = {
 };
 
 async function fetchStationIDs() {
-  console.log('Hello, World!');
+  console.log('🚀 Fetching station information from API...');
   try {
 
     const response = await axios.post(API_URL, requestBody, {

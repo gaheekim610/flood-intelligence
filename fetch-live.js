@@ -2,6 +2,12 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 
+// This script downloads the latest cyclone data CSV from BOM, filters it to only keep rows from the last 2 weeks, 
+// saves the filtered data to /data/cyclone-live.csv, 
+// and then fetches water level data for all stations in station-flood-level.csv for the same time period, 
+// saving the results to /data/water-level-live.csv.
+// Could take up to 3 hours (for 300 water stations).
+
 const url = 'https://www.bom.gov.au/clim_data/IDCKMSTM0S.csv';
 const outputPath = path.join(__dirname, 'data', 'cyclone-live.csv');
 

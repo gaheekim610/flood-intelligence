@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// This script extracts flood threshold level of water stations from HTML files in the /html directory,
+// and saves it to /data/flood-level.csv with columns: station_id, station_name, minor, moderate, major.
+
 const htmlDir = path.join(__dirname, 'html');
 
 const csvPath = path.join(__dirname, 'data', 'flood-level.csv');

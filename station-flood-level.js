@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// This script reads station information from /data/stations.csv and flood level information from /data/flood-level.csv,
+// matches them based on station name, and outputs a combined CSV (/data/station-flood-level.csv) with station ID, name, flood threshold levels.
+
 const floodLevelPath = path.join(__dirname, 'data', 'flood-level.csv');
 const stationsPath = path.join(__dirname, 'data', 'stations.csv');
 const outputPath = path.join(__dirname, 'data', 'station-flood-level.csv');

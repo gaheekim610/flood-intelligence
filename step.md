@@ -34,7 +34,27 @@
 - change `cutoffTime` to filter how recent to filter data
 - result saved in /recent folder
 
+7. `node combine-water-flood.js`
+- input 1: flood threshold data of water stations in /data/station-flood-level.csv 
+- input 2: time-series water level data for all water stations in all csv in /recent or /temp folder
+- combine & output to /data/combined-water-flood.csv
+
+# Utility
+
+1. `node count-stations-per-year.js`
+- Analyse /data/combined-water-flood.csv
+- Counts the number of unique stations per year
+- Helps us understand how many stations have data for each year
+
 # live data
 
 1. `node fetch-live.js`
-- result: /data/cyclone-live.csv, /data/water-level-live.csv
+- downloads the latest cyclone data CSV from BOM
+- fetches water level data for all stations
+- filter the data to within last 2 weeks
+- save to: /data/cyclone-live.csv, /data/water-level-live.csv
+
+2. `node fetch-bom-flood-stations.js`
+- Connects to the BOM FTP server, fetch flood warning station data
+- Save to /data/active-flood-warning.csv
+

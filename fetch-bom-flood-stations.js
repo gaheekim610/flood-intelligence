@@ -2,6 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
+// This script connects to the BOM FTP server, lists XML files in the IDQ range, 
+// downloads them, extracts flood warning station data, and saves it to a CSV file.
+
 const FTP_BASE_URL = 'ftp://ftp.bom.gov.au/anon/gen/fwo';
 const MIN_ID = 20705;
 const MAX_ID = 20879;

@@ -1,7 +1,15 @@
 const fs = require('fs');
 const path = require('path');
 
-const csvPath = path.join(__dirname, 'data', 'all_water_levels.csv');
+// This script reads the combined water level and flood threshold CSV (e.g. combined-water-flood-2021-2026-6hr-freq.csv),
+// extracts the year from the time column, and counts the number of unique stations per year.
+// The results are printed to the console.
+// It helps us understand how many stations have data for each year
+// and can indicate if there are any gaps in the data coverage over time.
+
+// Configurable path to the combined water level and flood threshold CSV
+// e.g. combined-water-flood-2021-2026-6hr-freq.csv / combined-water-flood-2021-2026.csv / combined-water-flood.csv
+const csvPath = path.join(__dirname, 'data', 'combined-water-flood-2021-2026-6hr-freq.csv');
 
 // Helper CSV parser (handles quoted values)
 function parseCSVLine(line) {
